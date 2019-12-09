@@ -12,6 +12,7 @@ class intcode_computer():
             self.day = None
         self.pointer = 0
         self.complete = False
+        self.relative_base = 0
         return
         
     def load_program(self, in_put):
@@ -21,17 +22,21 @@ class intcode_computer():
             return
         
         #If program is passed directly
-        elif type(in_put) == np.ndarray or type(in_put) == list:
+        elif type(in_put) == np.ndarray:
+            self.program = in_put.to_list()
+            self.day = None
+        elif type(in_put) == list:
             self.program = in_put
             self.day = None
             
         #If program is to be loaded from file
         else:
             self.day = in_put
-            self.program = np.genfromtxt('day'+str(self.day)+'_input.txt', dtype=np.int, delimiter=',')
+            self.program = np.genfromtxt('day'+str(self.day)+'_input.txt', dtype=np.int, delimiter=',').tolist()
             
         self.pointer = 0
         self.complete = False
+        self.relative_base = 0
         return
         
     def reset_memory(self, in_put=None):
@@ -76,6 +81,11 @@ class intcode_computer():
         
     def get_complete(self):
         return self.complete
+    
+    def pad_memory(self, idx):
+        '''Expands memory'''
+        while len(self.program) <=  idx:
+            self.program.append(0)
             
     def run_program(self, param_in=None, pointer=None, pause_on_out=False, verbose=True):
         '''Function to run the program
@@ -98,7 +108,7 @@ class intcode_computer():
         while i < len(self.program):
             fctn = self.program[i]
             #ABCDE
-
+            
             #Break function down from ABCDE into A B C DE
             instruction = np.zeros(5, dtype=np.int)
             for j in range(4, -1, -1):
@@ -108,26 +118,43 @@ class intcode_computer():
 
             #fctn that perform operations or comparisons
             if fctn == 1 or fctn == 2 or (fctn >= 5 and fctn <= 8):
-                #If parameter 1 is in place...
-                if instruction[2] == 1: #C
-                    param1 = self.program[i+1]
+                #If parameter 1 is relative to base...
+                if instruction[2] == 2: #C
+                    address = self.relative_base+self.program[i+1]
+                #...is in place...
+                elif instruction[2] == 1:
+                    address = i+1
                 #...or from memory
                 else:
-                    param1 = self.program[self.program[i+1]]
+                    address = self.program[i+1]
+                if address >= len(self.program):
+                    self.pad_memory(address)
+                param1 = self.program[address]
 
-                #If parameter 2 is in place...
-                if instruction[1] == 1: #B
-                    param2 = self.program[i+2]
+                #If parameter 1 is relative to base...
+                if instruction[1] == 2: #B
+                    address = self.relative_base+self.program[i+2]
+                #...is in place...
+                elif instruction[1] == 1:
+                    address = i+2
                 #...or from memory
                 else:
-                    param2 = self.program[self.program[i+2]]
+                    address = self.program[i+2]
+                if address >= len(self.program):
+                    self.pad_memory(address)
+                param2 = self.program[address]
 
-                #If parameter 3 in in place...
-                if instruction[0] == 1: #A
-                        param3 = i+3
+                #If parameter 3 is relative to base...
+                if instruction[0] == 2: #A
+                    param3 = self.relative_base+self.program[i+3]
+                #...is in place...
+                elif instruction[0] == 1:
+                    param3 = i+3
                 #...or from memory
                 else:
                     param3 = self.program[i+3]
+                if param3 >= len(self.program):
+                    self.pad_memory(param3)
 
                 #fctn that output to param3
                 if fctn == 1 or fctn == 2 or fctn == 7 or fctn == 8:
@@ -170,7 +197,7 @@ class intcode_computer():
                 #print('Input:')
                 if param_in is None:
                     print('Input:')
-                    param0 = input()
+                    param0 = int(input())
                 elif type(param_in) == np.ndarray or type(param_in) == list:
                     param0 = param_in[state]
                     if verbose:
@@ -184,23 +211,34 @@ class intcode_computer():
                     if verbose:
                         print('Input:', param0)
 
-                #Save input in place...
-                if instruction[2] == 1:
-                    self.program[i+1] = param0
+                #Save input relative to base...
+                if instruction[2] == 2:
+                    address = self.relative_base+self.program[i+1]
+                #...in place...
+                elif instruction[2] == 1:
+                    address = i+1
                 #...or to memory
                 else:
-                    self.program[self.program[i+1]] = param0
+                    address = self.program[i+1]
+                if address >= len(self.program):
+                    self.pad_memory(address)
+                self.program[address] = param0
                 i += 2
 
             #Print output
             elif fctn == 4:
-                #Output in place...
-                if instruction[2] == 1:
-                    paramN = self.program[i+1]
+                #Output relative to base...
+                if instruction[2] == 2:
+                    address = self.relative_base+self.program[i+1]
+                #...in place...
+                elif instruction[2] == 1:
+                    address = i+1
                 #...or from memory
                 else:
-                    paramN = self.program[self.program[i+1]]
-
+                    address = self.program[i+1]
+                if address >= len(self.program):
+                    self.pad_memory(address)
+                paramN = self.program[address]
                 param_out.append(paramN)
                 i += 2
 
@@ -212,6 +250,23 @@ class intcode_computer():
                 if pause_on_out:
                     self.pointer = i
                     return np.array(param_out)
+                
+            #Change relative base
+            elif fctn == 9:
+                #If parameter 1 is relative to base...
+                if instruction[2] == 2: #C
+                    address = self.relative_base+self.program[i+1]
+                #...is in place...
+                elif instruction[2] == 1:
+                    address = i+1
+                #...or from memory
+                else:
+                    address = self.program[i+1]
+                if address >= len(self.program):
+                    self.pad_memory(address)
+                param1 = self.program[address]
+                self.relative_base += param1
+                i += 2
 
             #End program
             elif fctn == 99:
@@ -223,6 +278,8 @@ class intcode_computer():
                 self.pointer = i
                 raise Exception('i:', i, 'fctn:', fctn, 'instruction:', instruction)
                 break
+                
+            #print(self.program)
 
         self.pointer = i
         return np.array(param_out)
