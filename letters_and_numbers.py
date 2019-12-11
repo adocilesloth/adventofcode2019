@@ -72,7 +72,7 @@ class characters():
                                    [0,1,0,0,0],
                                    [1,1,1,0,0]])
 
-        self.char['J'] = np.array([[0,1,1,1,0],
+        self.char['J'] = np.array([[0,0,1,1,0],
                                    [0,0,0,1,0],
                                    [0,0,0,1,0],
                                    [0,0,0,1,0],
@@ -132,7 +132,7 @@ class characters():
                                    [1,0,0,1,0],
                                    [1,0,0,1,0],
                                    [1,1,1,0,0],
-                                   [1,0,0,1,0],
+                                   [1,0,1,0,0],
                                    [1,0,0,1,0]])
 
         self.char['S'] = np.array([[0,1,1,1,0],
@@ -270,7 +270,7 @@ class characters():
         
         return self.char[character]
         
-    def find_characters(self, image):
+    def find_characters(self, image, x_offset=0, y_offset=0):
         '''Finds the characters in an  image
            Assumes text starts top left and characters
            are 5 pixels wide and 6 pixels high'''
@@ -279,14 +279,14 @@ class characters():
         
         found_char = ""
         
-        if height*6 < len(image):
+        if (height*6)+y_offset < len(image):
             print('WARNING: Height is not a multiple of 6. Clipping')
-        if width*5 < len(image[0]):
+        if (width*5)+x_offset < len(image[0]):
             print('WARNING: Width is not a multiple of 5. Clipping')
             
         for h in range(0, height):
             for w in range(0, width):
-                target = image[h*6:(h+1)*6,w*5:(w+1)*5]
+                target = image[(h*6)+y_offset:((h+1)*6)+y_offset,(w*5)+x_offset:((w+1)*5)+x_offset]
                 for key in self.char.keys():
                     if np.array_equal(target, self.char[key]):
                         #stdout.write(key)

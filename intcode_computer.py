@@ -32,7 +32,7 @@ class intcode_computer():
         #If program is to be loaded from file
         else:
             self.day = in_put
-            self.program = np.genfromtxt('day'+str(self.day)+'_input.txt', dtype=np.int, delimiter=',').tolist()
+            self.program = np.genfromtxt('day'+str(self.day)+'_input.txt', dtype=np.int64, delimiter=',').tolist()
             
         self.pointer = 0
         self.complete = False
