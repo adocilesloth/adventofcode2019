@@ -87,7 +87,7 @@ class intcode_computer():
         while len(self.program) <=  idx:
             self.program.append(0)
             
-    def run_program(self, param_in=None, pointer=None, pause_on_out=False, verbose=True):
+    def run_program(self, param_in=None, pointer=None, pause_on_out=False, pause_at_out=1, verbose=True):
         '''Function to run the program
            Steps along until 99 is reached
            fctn: 1 == +, 2 == *, 3 == input, 4 == output,
@@ -104,6 +104,7 @@ class intcode_computer():
         i = self.pointer
 
         state = 0
+        out_count = 0
         param_out = []
         while i < len(self.program):
             fctn = self.program[i]
@@ -248,8 +249,10 @@ class intcode_computer():
 
                 #If  using output as input for another program, this program can pause            
                 if pause_on_out:
-                    self.pointer = i
-                    return np.array(param_out)
+                    out_count += 1
+                    if out_count == pause_at_out:
+                        self.pointer = i
+                        return np.array(param_out)
                 
             #Change relative base
             elif fctn == 9:
