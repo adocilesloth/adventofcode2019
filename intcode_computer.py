@@ -300,3 +300,61 @@ class intcode_computer():
 
         self.pointer = i
         return np.array(param_out)
+    
+class ascii_computer():
+    
+    def __init__(self, in_put=None):
+        self.cpu = intcode_computer(in_put)
+        return
+    
+    def load_program(self, in_put):
+        self.cpu.load_program(in_put)
+        return
+    
+    def reset_memory(self, in_put=None):
+        self.cpu.reset_memory(in_put)
+        return
+    
+    def edit_memory(self, pointer, value):
+        if type(pointer) == str:
+            pointer = ord(pointer)
+        if type(value) == str:
+            value = ord(value)
+        self.cpu.edit_memory(pointer, value)
+        return
+        
+    def get_memory(self, pointer):
+        return self.cpu.get_memory(pointer)
+    
+    def set_pointer(self, pointer):
+        self.cpu.pointer = pointer
+        
+    def get_complete(self):
+        return self.cpu.get_complete()
+    
+    def run_program(self, param_in=None, pointer=None,
+                          pause_on_out=False, pause_at_out=1,
+                          pause_on_in=False, pause_at_in=1,
+                          verbose=True):
+        if param_in is not None and type(param_in) == str:
+            ords = []
+            for char in param_in:
+                ords.append(ord(char))
+            param_in = ords
+            
+        output = self.cpu.run_program(param_in, pointer,
+                                      pause_on_out, pause_at_out,
+                                      pause_on_in, pause_at_in,
+                                      verbose)
+        
+        string = ''
+        value = None
+        for num in output:
+            try:
+                char = chr(num)
+            except:
+                value = num
+            else:
+                string += char
+                
+        return string, value
