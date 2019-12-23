@@ -87,12 +87,15 @@ class intcode_computer():
         while len(self.program) <=  idx:
             self.program.append(0)
             
-    def run_program(self, param_in=None, pointer=None, pause_on_out=False, pause_at_out=1, verbose=True):
+    def run_program(self, param_in=None, pointer=None,
+                          pause_on_out=False, pause_at_out=1,
+                          pause_on_in=False, pause_at_in=1,
+                          verbose=True):
         '''Function to run the program
            Steps along until 99 is reached
            fctn: 1 == +, 2 == *, 3 == input, 4 == output,
                  5 == jump-if-true, 6 == jump-if-false,
-                 7 == <, 8 == ==,
+                 7 == <, 8 == ==, 9 == change base
                  99 == STOP
            mode: 0 == position, 1 == immediate
            ABCDE: DE - fctn (with leading 0 if < 10)
@@ -102,8 +105,15 @@ class intcode_computer():
         if pointer is not None:
             self.pointer = pointer
         i = self.pointer
+        
+        if type(param_in) is int:
+            param_in = [param_in]
+        
+        if pause_on_in and param_in is not None:
+            pause_at_in = len(param_in)+1
 
         state = 0
+        in_count = 0
         out_count = 0
         param_out = []
         while i < len(self.program):
@@ -196,6 +206,12 @@ class intcode_computer():
             #Get input
             elif fctn == 3:
                 #print('Input:')
+                if pause_on_in:
+                    in_count += 1
+                    if in_count == pause_at_in:
+                        self.pointer = i
+                        return np.array(param_out)
+                
                 if param_in is None:
                     print('Input:')
                     param0 = int(input())
@@ -281,8 +297,6 @@ class intcode_computer():
                 self.pointer = i
                 raise Exception('i:', i, 'fctn:', fctn, 'instruction:', instruction)
                 break
-                
-            #print(self.program)
 
         self.pointer = i
         return np.array(param_out)
